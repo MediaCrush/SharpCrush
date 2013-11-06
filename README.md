@@ -1,3 +1,7 @@
+This fork is designed with MediaCrush-Windows in mind, and is not suitable for
+general-purpose use. Use the original repository if you intend to make
+MediaCrush-enabled apps with .NET.
+
 SharpCrush
 ==============
 
