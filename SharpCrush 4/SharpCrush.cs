@@ -195,35 +195,37 @@ namespace SharpCrush4
         /// <param name="file">The file to upload</param>
         /// <returns>Returns one <see cref="FileUploadResult"/></returns>
         /// <remarks>API Doc Url: https://github.com/MediaCrush/MediaCrush/blob/master/docs/api.md#apiuploadfile </remarks>
-        public static FileUploadResult UploadFile(string file)
+        public static void UploadFileAsync(string file, UploadProgressChangedEventHandler progressHandler, Action<FileUploadResult> callback)
         {
             if (!File.Exists(file)) throw new FileNotFoundException("Specified file doesn't exist", file);
 
-            string json = Upload(BaseApiUrl + FileUploadApiUrl, file);
-
-            FileUploadResult result = JsonConvert.DeserializeObject<FileUploadResult>(json);
-
-            // Because the hash is the key of the SharpCrushMediaFile (I have no idea why), dynamic objects are needed //
-            var dynamicObject = JsonConvert.DeserializeObject<dynamic>(json);
-
-            // Sometimes it returns a somewhat malformed array. //
-            // https://github.com/MediaCrush/MediaCrush/issues/356 //
-            if (dynamicObject[result.FileHash] is JArray)
+            Upload(BaseApiUrl + FileUploadApiUrl, file, progressHandler, (s, e) =>
             {
-                // We going to have to get media files a different way //
-                var mediaFile = GetFileInfo(result.FileHash);
-                result.MediaFile = mediaFile;
-            }
+                var json = Encoding.UTF8.GetString(e.Result);
+                FileUploadResult result = JsonConvert.DeserializeObject<FileUploadResult>(json);
 
-            if (dynamicObject[result.FileHash] is JObject)
-            {
+                // Because the hash is the key of the SharpCrushMediaFile (I have no idea why), dynamic objects are needed //
+                var dynamicObject = JsonConvert.DeserializeObject<dynamic>(json);
 
-                // This is the expected/faster way //
-                var jObject = (JObject)dynamicObject[result.FileHash];
-                result.MediaFile = jObject.ToObject<SharpCrushMediaFile>();
-            }
+                // Sometimes it returns a somewhat malformed array. //
+                // https://github.com/MediaCrush/MediaCrush/issues/356 //
+                if (dynamicObject[result.FileHash] is JArray)
+                {
+                    // We going to have to get media files a different way //
+                    var mediaFile = GetFileInfo(result.FileHash);
+                    result.MediaFile = mediaFile;
+                }
 
-            return result;
+                if (dynamicObject[result.FileHash] is JObject)
+                {
+
+                    // This is the expected/faster way //
+                    var jObject = (JObject)dynamicObject[result.FileHash];
+                    result.MediaFile = jObject.ToObject<SharpCrushMediaFile>();
+                }
+
+                callback(result);
+            });
         }
 
         /// <summary>
@@ -277,19 +279,20 @@ namespace SharpCrush4
             }
         }
 
-        private static string Upload(string url, string filePath)
+        private static void Upload(string url, string filePath, UploadProgressChangedEventHandler progressHandler, UploadFileCompletedEventHandler completeHandler)
         {
             using (var client = new WebClient())
             {
                 try
                 {
-                    return Encoding.UTF8.GetString(client.UploadFile(url, filePath));
+                    client.UploadProgressChanged += progressHandler;
+                    client.UploadFileCompleted += completeHandler;
+                    client.UploadFileAsync(new Uri(url), filePath);
                 }
                 catch (WebException ex)
                 {
                     if (ex.Response != null)
-                        return new StreamReader(ex.Response.GetResponseStream()).ReadToEnd();
-                    return string.Empty;
+                        new StreamReader(ex.Response.GetResponseStream()).ReadToEnd();
                 }
             }
         }
