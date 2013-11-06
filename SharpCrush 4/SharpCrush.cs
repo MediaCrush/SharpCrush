@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Schema;
 using SharpCrush4.Results;
+using System.Security.Cryptography;
 
 namespace SharpCrush4
 {
@@ -70,6 +71,14 @@ namespace SharpCrush4
         #endregion
 
         #region Public Routines
+
+        public static string GetFileHash(byte[] file)
+        {
+            var md5 = MD5.Create();
+            var hash = Convert.ToBase64String(md5.ComputeHash(file)).Remove(12);
+            hash = hash.Replace("+", "-").Replace("/", "_");
+            return hash;
+        }
 
         /// <summary>
         /// Gets information about the file whose hash is specified.
