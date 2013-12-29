@@ -133,7 +133,7 @@ namespace SharpCrush4
         /// <remarks>API Doc Url: https://github.com/MediaCrush/MediaCrush/blob/master/docs/api.md#apihashexists </remarks>
         public static DeleteFileResult DeleteFile(string hash)
         {
-            string json = Get(BaseApiUrl + FileDeleteApiUrl, hash);
+            string json = Delete(BaseApiUrl + FileDeleteApiUrl, hash);
 
             var dictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
 
@@ -252,6 +252,23 @@ namespace SharpCrush4
                 try
                 {
                     return client.DownloadString(string.Format(url, formatArgs));
+                }
+                catch (WebException ex)
+                {
+                    if (ex.Response != null)
+                        return new StreamReader(ex.Response.GetResponseStream()).ReadToEnd();
+                    return string.Empty;
+                }
+            }
+        }
+        
+        private static string Delete(string url, string post)
+        {
+            using (var client = new WebClient())
+            {
+                try
+                {
+                    return client.UploadString(url, "Delete", post);
                 }
                 catch (WebException ex)
                 {
