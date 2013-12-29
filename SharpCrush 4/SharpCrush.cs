@@ -41,7 +41,7 @@ namespace SharpCrush4
         /// Parameters: none.
         /// Returns: a dictionary describing whether the delete operation succeeded. In most cases it is easier to check the HTTP status code.
         /// </summary>
-        public const string FileDeleteApiUrl = "/api/{0}/delete";
+        public const string FileDeleteApiUrl = "/api/{0}";
 
         /// <summary>
         /// Parameters: none.
@@ -278,6 +278,7 @@ namespace SharpCrush4
                 }
             }
         }
+        
 
         private static void Upload(string url, string filePath, UploadProgressChangedEventHandler progressHandler, UploadFileCompletedEventHandler completeHandler)
         {
